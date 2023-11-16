@@ -20,7 +20,7 @@ const bootstrap = async () => {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: ['https://localhost:3000', 'https://kanbee.vercel.app'],
+    origin: ['https://localhost:3000', 'https://kanbee.milley.uno'],
     credentials: true,
   });
 
