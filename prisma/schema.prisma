@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_RENDER_URL") 
+}
+
+model User {
+  id              String     @id @default(uuid()) @map("_id")
+  email           String     @unique
+  username        String
+  avatar          String
+  cycleTimer      Int        @default(0) @map("cycle_timer")
+  createdProjects Int        @default(0) @map("created_projects")
+
+  projects        Project[]
+  
+  projectsId      Int[]      @default([])  @map("projects_id")
+
+  invites         Json[]     @db.JsonB @default([])
+  password        String?
+  provider        Provider?
+  createdAt       DateTime   @default(now()) @map("created_at")
+  roles           Role[]
+  token           Token[]
+  quote           Quote[]
+  @@map("users")
+}
+
+model Token {
+  token           String     @unique
+  exp             DateTime
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  userAgent       String     @map("user_agent")
+
+  @@map("tokens")
+}
+
+model Project {
+  id              Int      @id @default(autoincrement())
+  title           String
+  user            User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId         String   @map("admin_id")
+  membersId       String[] @default([]) @map("members_id")
+  kanban          Json[]   @db.JsonB
+
+  @@map("projects")
+}
+
+model Quote {
+  id              String   @id @default(uuid())
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId        String   @map("author_id")
+  text            String
+
+  @@map("quotes")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Provider {
+  GOOGLE
+  GITHUB
+}
