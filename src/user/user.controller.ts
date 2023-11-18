@@ -61,4 +61,11 @@ export class UserController {
     const user = await this.userService.findOne(userJwt.id);
     return new UserResponse(user);
   }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Post('get-members')
+  async getMembers(@Body('ids') ids: string[]) {
+    const users: User[] = await this.userService.getMembers(ids);
+    return users.map((user) => new UserResponse(user));
+  }
 }

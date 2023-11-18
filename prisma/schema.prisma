@@ -23,6 +23,7 @@ model User {
   projectsId      Int[]      @default([])  @map("projects_id")
 
   invites         Json[]     @db.JsonB @default([])
+  exclusions      String[]   @default([])
   password        String?
   provider        Provider?
   createdAt       DateTime   @default(now()) @map("created_at")

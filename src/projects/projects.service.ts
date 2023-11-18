@@ -1,11 +1,11 @@
-import { JwtPayload } from '@auth/interfaces';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { Project } from '@prisma/client';
+import { Project, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { UserService } from '@user/user.service';
 import { Cache } from 'cache-manager';
 import { v4 } from 'uuid';
+import { InviteDto } from './dto';
 
 @Injectable()
 export class ProjectsService {
@@ -14,9 +14,7 @@ export class ProjectsService {
     private readonly userService: UserService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
-  async create(title: string, userJwt: JwtPayload) {
-    const user = await this.userService.findOne(userJwt.id);
-
+  async create(title: string, user: User) {
     const project = await this.prismaService.project.create({
       data: {
         title,
@@ -65,7 +63,7 @@ export class ProjectsService {
     return members;
   }
 
-  async updateKanban(project: Project): Promise<Project> {
+  async updateProject(project: Project): Promise<Project> {
     const _project = await this.prismaService.project.update({
       where: { id: project.id },
       data: { kanban: project.kanban },
@@ -75,7 +73,7 @@ export class ProjectsService {
     return _project;
   }
 
-  async removeProject(project: Project) {
+  async deleteProject(project: Project) {
     for (const memberId of project.membersId) {
       const user = await this.userService.findOne(memberId);
       if (!user) continue;
@@ -85,7 +83,79 @@ export class ProjectsService {
 
     await this.prismaService.project.delete({ where: { id: project.id } });
 
-    return project.id;
+    return project;
+  }
+
+  async sendInvite(invite: InviteDto) {
+    const user = await this.userService.findOne(invite.email);
+
+    const _invite = { id: invite.id, title: invite.title };
+    user.invites.push({ ..._invite });
+
+    await this.userService.save(user);
+
+    return user;
+  }
+
+  async accessInvite(invite: InviteDto) {
+    const user = await this.userService.findOne(invite.email);
+
+    const project = await this.findProjectById(invite.id);
+    project.membersId.push(user.id);
+    await this.prismaService.project.update({ where: { id: invite.id }, data: { membersId: project.membersId } });
+
+    user.invites = user.invites.filter((i: { id: number }) => i.id !== invite.id);
+    user.projectsId.push(invite.id);
+    await this.userService.save(user);
+
+    return { project, user };
+  }
+
+  async ignoreInvite(invite: InviteDto) {
+    const user = await this.userService.findOne(invite.email);
+
+    user.invites = user.invites.filter((i: { id: number }) => i.id !== invite.id);
+    await this.userService.save(user);
+
+    return user;
+  }
+
+  async acceptExclusion(title: string, userId: string) {
+    const user = await this.userService.findOne(userId);
+
+    user.exclusions = user.exclusions.filter((ex) => ex !== title);
+    await this.userService.save(user);
+
+    return user;
+  }
+
+  async exileUser(project: Project, userId: string) {
+    const membersId = project.membersId.filter((m) => m !== userId);
+    const _project = await this.prismaService.project.update({
+      where: { id: project.id },
+      data: { membersId },
+    });
+
+    const user = await this.userService.findOne(userId);
+    user.projectsId = user.projectsId.filter((p) => p !== project.id);
+    user.exclusions.push(project.title);
+    this.userService.save(user);
+
+    return { project: _project, user };
+  }
+
+  async leaveProject(project: Project, userId: string) {
+    const membersId = project.membersId.filter((m) => m !== userId);
+    const _project = await this.prismaService.project.update({
+      where: { id: project.id },
+      data: { membersId },
+    });
+
+    const user = await this.userService.findOne(userId);
+    user.projectsId = user.projectsId.filter((p) => p !== project.id);
+    this.userService.save(user);
+
+    return { project: _project, user };
   }
 
   private async findProjectById(id: number): Promise<Project | null> {

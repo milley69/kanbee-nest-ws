@@ -12,6 +12,7 @@ export class UserResponse implements User {
   createdProjects: number;
   projectsId: number[];
   invites: Prisma.JsonValue[];
+  exclusions: string[];
 
   @Exclude()
   password: string;

@@ -17,7 +17,8 @@ export class UserService {
   ) {}
 
   async save(user: Partial<User>) {
-    const { email, avatar, username, provider, projectsId, roles, invites, createdProjects, cycleTimer } = user;
+    const { email, avatar, username, provider, projectsId, roles, invites, createdProjects, cycleTimer, exclusions } =
+      user;
     const hashedPassword = user?.password ? await this.hashPassword(user.password) : undefined;
     const savedUser = await this.prismaService.user.upsert({
       where: { email },
@@ -30,6 +31,7 @@ export class UserService {
         roles,
         invites,
         cycleTimer,
+        exclusions,
         createdProjects,
       },
       create: {
@@ -66,6 +68,15 @@ export class UserService {
       where: { OR: [{ username: { contains: emailOrUsername } }, { email: { contains: emailOrUsername } }] },
       take: 10,
     });
+  }
+
+  async getMembers(body: string[]): Promise<User[]> {
+    const users: User[] = [];
+    for (const id of body) {
+      const user = await this.findOne(id);
+      if (user) users.push(user);
+    }
+    return users;
   }
 
   async delete(id: string, user: JwtPayload) {
