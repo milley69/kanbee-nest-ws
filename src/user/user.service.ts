@@ -5,7 +5,7 @@ import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
-import { compare, hash } from 'bcrypt';
+import { compare, genSaltSync, hashSync } from 'bcrypt';
 import { Cache } from 'cache-manager';
 
 @Injectable()
@@ -99,7 +99,10 @@ export class UserService {
 
   async hashPassword(password: string) {
     const saltOrRounds = 10;
-    return await hash(password, saltOrRounds);
+    // return await hashSync(password, saltOrRounds);
+    const salt = genSaltSync(saltOrRounds);
+    const hash = hashSync(password, salt);
+    return hash;
   }
 
   async comparePasswords(args: { hash: string; password: string }) {

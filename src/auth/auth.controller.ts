@@ -116,7 +116,6 @@ export class AuthController {
   @UseGuards(GoogleGuard)
   @Get('google/callback')
   googleAuthCallback(@Req() req: Request, @Res() res: Response) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const { email, username, avatar, accessToken } = req.user;
     return res.redirect(
@@ -146,7 +145,6 @@ export class AuthController {
   @Get('github/callback')
   githubAuthCallback(@Req() req: Request, @Res() res: Response) {
     const URL = this.configService.get('URL') + '/v1/api/auth';
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const { email, username, avatar, accessToken } = req.user;
     return res.redirect(

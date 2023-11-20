@@ -115,11 +115,11 @@ export class AuthService {
       where: { token },
       update: {
         token: v4(),
-        exp: add(new Date(), { months: 1 }),
+        exp: add(new Date(), { days: 1 }),
       },
       create: {
         token: v4(),
-        exp: add(new Date(), { months: 1 }),
+        exp: add(new Date(), { days: 1 }),
         userId,
         userAgent: agent,
       },
