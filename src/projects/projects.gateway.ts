@@ -1,3 +1,4 @@
+import { ClassSerializerInterceptor, UseInterceptors } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Project, User } from '@prisma/client';
 import { UserResponse } from '@user/responses';
@@ -16,6 +17,7 @@ export class ProjectsGateway {
   server: Server;
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('createProject')
   async create(@MessageBody('title') title: string, @MessageBody('user') user: User) {
     const data = await this.projectsService.create(title, user);
@@ -49,6 +51,7 @@ export class ProjectsGateway {
     this.server.emit(`deleteProject:${_project.id}`, _project);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('leaveProject')
   async leaveProject(@MessageBody() data: { project: Project; userId: string }, @ConnectedSocket() client: Socket) {
     const _data = await this.projectsService.leaveProject(data.project, data.userId);
@@ -56,12 +59,14 @@ export class ProjectsGateway {
     client.broadcast.emit(`updateProject:${data.project.id}`, _data.project);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('sendInvite')
   async sendInvite(@MessageBody() invite: InviteDto, @ConnectedSocket() client: Socket) {
     const user = await this.projectsService.sendInvite(invite);
     client.broadcast.emit(`getInvite:${user.id}`, new UserResponse(user));
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('accessInvite')
   async accessInvite(@MessageBody() invite: InviteDto, @ConnectedSocket() client: Socket) {
     const data = await this.projectsService.accessInvite(invite);
@@ -69,17 +74,21 @@ export class ProjectsGateway {
     return { user: new UserResponse(data.user), project: data.project };
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('ignoreInvite')
   async ignoreInvite(@MessageBody() invite: InviteDto) {
     const user = await this.projectsService.ignoreInvite(invite);
     return new UserResponse(user);
   }
+
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('acceptExclusion')
   async acceptExclusion(@MessageBody() data: { title: string; userId: string }) {
     const user = await this.projectsService.acceptExclusion(data.title, data.userId);
     return new UserResponse(user);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @SubscribeMessage('exileUser')
   async exileUser(
     @MessageBody('project') project: Project,

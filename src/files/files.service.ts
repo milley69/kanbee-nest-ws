@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { UserService } from '@user/user.service';
 import { v4 } from 'uuid';
-import { File as ExpressFile } from './files.controller';
 
 @Injectable()
 export class FilesService implements OnModuleInit {
@@ -23,7 +22,7 @@ export class FilesService implements OnModuleInit {
     this.supabase = createClient(url, key);
   }
 
-  async create(userJwt: JwtPayload, file: ExpressFile) {
+  async create(userJwt: JwtPayload, file: Express.Multer.File) {
     try {
       const user = await this.userService.findOne(userJwt.id);
       if (!user) throw new Error('User not found.');
@@ -36,17 +35,20 @@ export class FilesService implements OnModuleInit {
       }
 
       const id = v4();
+
       const { error } = await this.supabase.storage
         .from('avatars')
-        .upload(`${id}.png`, file as unknown as File, { upsert: true });
+        .upload(`${id}.png`, file.buffer, { upsert: true, contentType: 'image/png ' });
+
       if (error) throw new Error(error.message);
 
-      const avatar = this.generateAvatar(id);
-      user.avatar = avatar;
+      user.avatar = this.generateAvatar(id);
       await this.userService.save(user);
-      return { done: avatar, error: null };
+
+      return user;
     } catch (error) {
-      return { done: false, error };
+      console.log('error: ', error);
+      return null;
     }
   }
 
@@ -55,32 +57,3 @@ export class FilesService implements OnModuleInit {
     return `${url}/${id}.png`;
   }
 }
-/* 
-  const imageMeow: string[] = ['meow1.png', 'meow2.png', 'meow3.png', 'meow4.png', 'meow5.png']
-
-  const updateAvatar = async (image: FormData) => {
-    if (!user.value) return false
-    const oldAvatar = user.value.avatar.split('/')[8]
-    try {
-      if (!imageMeow.includes(oldAvatar)) {
-        const { error: errorDel } = await $supabase.storage.from('avatars').remove([oldAvatar])
-        if (errorDel) throw errorDel
-      }
-      const id = Math.floor(Number(new Date()) * Math.random())
-      const { error } = await $supabase.storage.from('avatars').upload(`${id}.png`, image, { upsert: true })
-      if (error) throw error
-      await updateAvatarInDB(id)
-      return true
-    } catch (error) {
-      console.log('error: ', error)
-      return false
-    }
-  }
-
-  const updateAvatarInDB = async (id: number) => {
-    if (!user.value) return
-    const avatar = `https://drimoiqxfujniunvknha.supabase.co/storage/v1/object/public/avatars/${id}.png`
-    await $supabase.from('profiles').update({ avatar }).eq('id', user.value.id)
-    user.value.avatar = avatar
-  }
-*/

@@ -38,16 +38,11 @@ export class UserController {
     return this.userService.delete(id, user);
   }
 
-  @Get()
-  me(@CurrentUser() user: JwtPayload) {
-    return user;
-  }
-
   @UseInterceptors(ClassSerializerInterceptor)
   @Patch()
-  async updateUser(@Body() body: Partial<User>) {
-    const user = await this.userService.save(body);
-    return new UserResponse(user);
+  async updateUser(@Body('user') user: Partial<User>) {
+    const _user = await this.userService.save(user);
+    return new UserResponse(_user);
   }
 
   @Post('timer')

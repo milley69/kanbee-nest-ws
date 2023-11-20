@@ -66,7 +66,7 @@ export class UserService {
   async findUsers(emailOrUsername: string): Promise<User[]> {
     return this.prismaService.user.findMany({
       where: { OR: [{ username: { contains: emailOrUsername } }, { email: { contains: emailOrUsername } }] },
-      take: 10,
+      // take: 10,
     });
   }
 
