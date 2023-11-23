@@ -4,7 +4,7 @@ import * as cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 
-const PORT = process.env.POST || 3555;
+const PORT = process.env.PORT || 3555;
 
 const bootstrap = async () => {
   const app =

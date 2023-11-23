@@ -82,7 +82,7 @@ export class AuthService {
     });
 
     const hash = await this.userService.hashPassword(dto.password);
-    // console.log('hash: ', hash);
+    console.log('hash: ', hash);
 
     const isCompare = await this.userService.comparePasswords({ hash: user.password, password: dto.password });
     if (!user || !isCompare) {
@@ -112,7 +112,7 @@ export class AuthService {
     });
     const token = _token?.token ?? '';
     return this.prismaService.token.upsert({
-      where: { token },
+      where: { token, userAgent: agent },
       update: {
         token: v4(),
         exp: add(new Date(), { days: 1 }),

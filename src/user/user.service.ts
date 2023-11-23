@@ -5,11 +5,13 @@ import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
-import { compare, genSaltSync, hashSync } from 'bcrypt';
 import { Cache } from 'cache-manager';
+import { PasswordCrypt } from 'password-crypt';
 
 @Injectable()
 export class UserService {
+  private pCrypt: PasswordCrypt = new PasswordCrypt();
+
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly prismaService: PrismaService,
@@ -19,7 +21,9 @@ export class UserService {
   async save(user: Partial<User>) {
     const { email, avatar, username, provider, projectsId, roles, invites, createdProjects, cycleTimer, exclusions } =
       user;
-    const hashedPassword = user?.password ? await this.hashPassword(user.password) : undefined;
+    const hashedPassword =
+      user?.password && !user.password.startsWith('$2a') ? await this.hashPassword(user.password) : undefined;
+    console.log('hashedPassword: ', hashedPassword);
     const savedUser = await this.prismaService.user.upsert({
       where: { email },
       update: {
@@ -98,15 +102,21 @@ export class UserService {
   // }
 
   async hashPassword(password: string) {
-    const saltOrRounds = 10;
+    // const saltOrRounds = 10;
     // return await hashSync(password, saltOrRounds);
-    const salt = genSaltSync(saltOrRounds);
-    const hash = hashSync(password, salt);
+    // const salt = genSaltSync(saltOrRounds);
+    // const hash = hashSync(password, salt);
+    // return hash;
+    // const hash = await argon2.hash(password, { saltLength: 10 });
+    const hash = await this.pCrypt.hash(password);
+
     return hash;
   }
 
   async comparePasswords(args: { hash: string; password: string }) {
-    return await compare(args.password, args.hash);
+    // return await compare(args.password, args.hash);
+    // return await argon2.verify(args.hash, args.password, { saltLength: 10 });
+    return await this.pCrypt.compare(args.password, args.hash);
   }
 
   private generateAvatar() {
